@@ -7,8 +7,9 @@
   <style>
     body {
       margin: 0;
-      font-family: 'Segoe UI', Tahoma, sans-serif;
-      background: #f0f2f5;
+      font-family: Arial, sans-serif;
+      background: #000;   /* nền đen */
+      color: #fff;        /* chữ trắng */
     }
 
     header {
@@ -16,12 +17,14 @@
       padding: 20px;
       font-size: 24px;
       font-weight: bold;
-      color: #1877f2;
-      background: #fff;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.8);       /* header đen trong mờ */
+      backdrop-filter: blur(16px) saturate(200%);
+      -webkit-backdrop-filter: blur(16px) saturate(200%);
       position: sticky;
       top: 0;
       z-index: 10;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.9);
     }
 
     /* Masonry Grid */
@@ -42,8 +45,8 @@
       position: relative;
       overflow: hidden;
       border-radius: 12px;
-      background: #eee;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      background: #111; /* nền tối */
+      box-shadow: 0 2px 8px rgba(0,0,0,0.6);
       cursor: zoom-in;
       opacity: 0;
       transform: translateY(30px);
@@ -63,6 +66,18 @@
       transform: scale(1.05);
     }
 
+    /* 🔹 Số thứ tự ảnh */
+    .photo-number {
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      font-size: 14px;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
     /* Viewer */
     .viewer {
       display: none;
@@ -72,10 +87,11 @@
       z-index: 1000;
       align-items: center;
       justify-content: center;
+      flex-direction: column;
     }
     .viewer img {
       max-width: 90%;
-      max-height: 90%;
+      max-height: 80%;
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.5);
       animation: zoomIn .4s ease;
@@ -93,10 +109,15 @@
       cursor: pointer;
       font-weight: bold;
     }
+    .viewer-caption {
+      margin-top: 15px;
+      font-size: 18px;
+      color: #ccc;
+    }
   </style>
 </head>
 <body>
-  <header> Bộ sưu tập 12A1 (2023-2024)</header>
+  <header>Bộ sưu tập 12A1 (2023-2024)</header>
 
   <div class="gallery" id="gallery"></div>
 
@@ -104,12 +125,14 @@
   <div class="viewer" id="viewer">
     <span class="close" id="close">&times;</span>
     <img id="viewerImg" src="">
+    <div class="viewer-caption" id="viewerCaption"></div>
   </div>
 
   <script>
     const gallery = document.getElementById("gallery");
     const viewer = document.getElementById("viewer");
     const viewerImg = document.getElementById("viewerImg");
+    const viewerCaption = document.getElementById("viewerCaption");
     const closeBtn = document.getElementById("close");
 
     // Load ảnh từ 1.jpg -> 999.jpg (hoặc nhiều hơn)
@@ -121,20 +144,24 @@
       img.src = i + ".jpg";
       img.alt = "Ảnh " + i;
 
-      img.onload = () => div.classList.add("loaded");
+      const label = document.createElement("span");
+      label.className = "photo-number";
+      label.textContent = "Ảnh " + i;
 
-      // Ẩn ảnh nếu không tồn tại
+      img.onload = () => div.classList.add("loaded");
       img.onerror = () => div.style.display = "none";
 
-      img.onclick = () => showImage(img.src);
+      img.onclick = () => showImage(img.src, i);
 
       div.appendChild(img);
+      div.appendChild(label);
       gallery.appendChild(div);
     }
 
     // Viewer
-    function showImage(src) {
+    function showImage(src, index) {
       viewerImg.src = src;
+      viewerCaption.textContent = "Ảnh số " + index;
       viewer.style.display = "flex";
     }
     closeBtn.onclick = () => viewer.style.display = "none";
