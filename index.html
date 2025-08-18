@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Photo Viewer</title>
+<style>
+  body {
+    margin: 0;
+    background: #000;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #viewer {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+  #viewer img {
+    max-width: 100%;
+    max-height: 100%;
+    user-select: none;
+    pointer-events: none;
+    will-change: transform;
+    transition: opacity 0.4s ease;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  #viewer img.active { opacity: 1; z-index: 10; }
+  .nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 50px;
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    user-select: none;
+    font-weight: bold;
+    z-index: 20;
+  }
+  .nav:hover { color: white; }
+  #prev { left: 20px; }
+  #next { right: 20px; }
+</style>
+</head>
+<body>
+
+<div id="viewer">
+  <span id="prev" class="nav">&#10094;</span>
+  <span id="next" class="nav">&#10095;</span>
+</div>
+
+<script>
+const images = ["ANH1.jpg","ANH2.jpg"];
+const viewer = document.getElementById("viewer");
+let imgElements = [];
+let currentIndex = 0;
+
+// Tạo ảnh
+images.forEach((src,i)=>{
+  const img=document.createElement("img");
+  img.src=src;
+  if(i===0) img.classList.add("active");
+  viewer.appendChild(img);
+  imgElements.push(img);
+});
+
+let scale=1;
+let translateX=0, translateY=0;
+
+// Hiện ảnh
+function showImage(index){
+  imgElements[currentIndex].classList.remove("active");
+  currentIndex=(index+images.length)%images.length;
+  imgElements[currentIndex].classList.add("active");
+  resetZoom();
+}
+document.getElementById("next").onclick=()=>showImage(currentIndex+1);
+document.getElementById("prev").onclick=()=>showImage(currentIndex-1);
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowRight") showImage(currentIndex+1);
+  if(e.key==="ArrowLeft") showImage(currentIndex-1);
+});
+
+// Zoom mượt theo con trỏ
+viewer.addEventListener("wheel", e=>{
+  e.preventDefault();
+  const img=imgElements[currentIndex];
+  const rect=img.getBoundingClientRect();
+
+  // tọa độ chuột so với tâm ảnh
+  const offsetX=e.clientX-rect.left-rect.width/2;
+  const offsetY=e.clientY-rect.top-rect.height/2;
+
+  let oldScale=scale;
+  if(e.deltaY<0){ scale*=1.1; } // zoom in
+  else{ scale/=1.1; } // zoom out
+  scale=Math.min(Math.max(1,scale),5);
+
+  // công thức giữ điểm chuột cố định khi zoom
+  translateX-=offsetX*(scale/oldScale-1);
+  translateY-=offsetY*(scale/oldScale-1);
+
+  if(scale===1){ // reset về giữa
+    translateX=0; translateY=0;
+  }
+
+  applyTransform(img);
+});
+
+function applyTransform(img){
+  img.style.transform=`translate(calc(-50% + ${translateX}px), calc(-50% + ${translateY}px)) scale(${scale})`;
+}
+
+function resetZoom(){
+  scale=1;
+  translateX=0;
+  translateY=0;
+  const img=imgElements[currentIndex];
+  applyTransform(img);
+}
+</script>
+</body>
+</html>
