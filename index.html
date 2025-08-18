@@ -2,129 +2,208 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Photo Viewer</title>
+<title>12A1 (2023-2024)</title>
 <style>
   body {
     margin: 0;
-    background: #000;
-    height: 100vh;
-    overflow: hidden;
+    font-family: Helvetica, Arial, sans-serif;
+    background: linear-gradient(180deg, #e9ebf0, #ffffff);
+    color: #050505;
+    min-height: 100vh;
   }
-  #viewer {
+
+  header {
+    padding: 16px;
+    text-align: center;
+    font-size: 26px;
+    font-weight: bold;
+    background: #1877f2;
+    color: white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+
+  /* Loading bar */
+  #loadingBarContainer {
+    position: fixed;
+    top: 0; left: 0;
     width: 100%;
+    height: 4px;
+    background: #e4e6eb;
+    z-index: 200;
+  }
+  #loadingBar {
+    width: 0%;
     height: 100%;
-    position: relative;
-    background: #000;
-    display: flex;
+    background: #1877f2;
+    transition: width 0.3s ease;
+  }
+
+  .gallery {
+    display: none; /* Ẩn cho đến khi load xong */
+    grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
+    gap: 16px;
+    padding: 24px;
+    max-width: 1200px;
+    margin: auto;
+  }
+  .gallery img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    cursor: pointer;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    background: #f0f2f5;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .gallery img:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+
+  #viewer {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    display: none;
     justify-content: center;
     align-items: center;
     overflow: hidden;
+    z-index: 100;
   }
   #viewer img {
-    max-width: 100%;
-    max-height: 100%;
+    max-width: 95%;
+    max-height: 95%;
     user-select: none;
     pointer-events: none;
-    will-change: transform;
-    transition: opacity 0.4s ease;
+    transition: transform 0.25s ease, opacity 0.25s ease;
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 50%; left: 50%;
     transform: translate(-50%, -50%) scale(1);
+    border-radius: 6px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
   }
-  #viewer img.active { opacity: 1; z-index: 10; }
-  .nav {
+
+  .nav, .close {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 50px;
-    color: rgba(255,255,255,0.7);
+    font-size: 42px;
+    color: white;
     cursor: pointer;
     user-select: none;
-    font-weight: bold;
     z-index: 20;
+    padding: 10px;
+    border-radius: 50%;
+    transition: background 0.2s;
   }
-  .nav:hover { color: white; }
-  #prev { left: 20px; }
-  #next { right: 20px; }
+  .nav:hover, .close:hover { background: rgba(255,255,255,0.2); }
+  #prev { left: 25px; }
+  #next { right: 25px; }
+  .close {
+    top: 25px;
+    right: 25px;
+    transform: none;
+    font-size: 36px;
+  }
 </style>
 </head>
 <body>
 
+<header> Bộ sưu tập 12A1 (2023-2024)</header>
+
+<!-- Loading bar -->
+<div id="loadingBarContainer">
+  <div id="loadingBar"></div>
+</div>
+
+<div class="gallery" id="gallery"></div>
+
 <div id="viewer">
+  <img id="viewerImg" src="" alt="">
   <span id="prev" class="nav">&#10094;</span>
   <span id="next" class="nav">&#10095;</span>
+  <span id="close" class="close">&times;</span>
 </div>
 
 <script>
-const images = ["ANH1.jpg","ANH2.jpg"];
+const gallery = document.getElementById("gallery");
+const loadingBar = document.getElementById("loadingBar");
+const loadingBarContainer = document.getElementById("loadingBarContainer");
+
+let total = 20; // số ảnh
+let loaded = 0;
+
+// Tạo gallery
+for (let i=1; i<=total; i++) {
+  const img = document.createElement("img");
+  img.src = i + ".jpg";
+  img.alt = "Ảnh " + i;
+
+  img.onload = img.onerror = () => {
+    loaded++;
+    let percent = Math.round((loaded/total)*100);
+    loadingBar.style.width = percent + "%";
+    if (loaded === total) {
+      setTimeout(()=>{
+        loadingBarContainer.style.display="none";
+        gallery.style.display="grid";
+      }, 500);
+    }
+  };
+
+  gallery.appendChild(img);
+}
+
+// Viewer logic
+const thumbs = document.querySelectorAll(".gallery img");
 const viewer = document.getElementById("viewer");
-let imgElements = [];
+const viewerImg = document.getElementById("viewerImg");
 let currentIndex = 0;
 
-// Tạo ảnh
-images.forEach((src,i)=>{
-  const img=document.createElement("img");
-  img.src=src;
-  if(i===0) img.classList.add("active");
-  viewer.appendChild(img);
-  imgElements.push(img);
+thumbs.forEach((thumb,i)=>{
+  thumb.addEventListener("click",()=>openViewer(i));
 });
 
-let scale=1;
-let translateX=0, translateY=0;
-
-// Hiện ảnh
+function openViewer(index){
+  viewer.style.display="flex";
+  currentIndex=index;
+  showImage(currentIndex);
+}
 function showImage(index){
-  imgElements[currentIndex].classList.remove("active");
-  currentIndex=(index+images.length)%images.length;
-  imgElements[currentIndex].classList.add("active");
-  resetZoom();
+  currentIndex=(index+thumbs.length)%thumbs.length;
+  viewerImg.style.opacity="0";
+  setTimeout(()=>{
+    viewerImg.src=thumbs[currentIndex].src;
+    resetZoom();
+    viewerImg.style.opacity="1";
+  },150);
 }
 document.getElementById("next").onclick=()=>showImage(currentIndex+1);
 document.getElementById("prev").onclick=()=>showImage(currentIndex-1);
-document.addEventListener("keydown",e=>{
-  if(e.key==="ArrowRight") showImage(currentIndex+1);
-  if(e.key==="ArrowLeft") showImage(currentIndex-1);
-});
+document.getElementById("close").onclick=()=>viewer.style.display="none";
 
-// Zoom mượt theo con trỏ
+// Zoom
+let scale=1, translateX=0, translateY=0;
 viewer.addEventListener("wheel", e=>{
+  if(!viewerImg.src) return;
   e.preventDefault();
-  const img=imgElements[currentIndex];
-  const rect=img.getBoundingClientRect();
-
-  // tọa độ chuột so với tâm ảnh
+  const rect=viewerImg.getBoundingClientRect();
   const offsetX=e.clientX-rect.left-rect.width/2;
   const offsetY=e.clientY-rect.top-rect.height/2;
-
   let oldScale=scale;
-  if(e.deltaY<0){ scale*=1.1; } // zoom in
-  else{ scale/=1.1; } // zoom out
+  if(e.deltaY<0) scale*=1.1; else scale/=1.1;
   scale=Math.min(Math.max(1,scale),5);
-
-  // công thức giữ điểm chuột cố định khi zoom
   translateX-=offsetX*(scale/oldScale-1);
   translateY-=offsetY*(scale/oldScale-1);
-
-  if(scale===1){ // reset về giữa
-    translateX=0; translateY=0;
-  }
-
-  applyTransform(img);
+  if(scale===1){ translateX=0; translateY=0; }
+  applyTransform();
 });
-
-function applyTransform(img){
-  img.style.transform=`translate(calc(-50% + ${translateX}px), calc(-50% + ${translateY}px)) scale(${scale})`;
+function applyTransform(){
+  viewerImg.style.transform=`translate(calc(-50% + ${translateX}px), calc(-50% + ${translateY}px)) scale(${scale})`;
 }
-
-function resetZoom(){
-  scale=1;
-  translateX=0;
-  translateY=0;
-  const img=imgElements[currentIndex];
-  applyTransform(img);
-}
+function resetZoom(){ scale=1; translateX=0; translateY=0; applyTransform(); }
 </script>
+
 </body>
 </html>
